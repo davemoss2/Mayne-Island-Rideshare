@@ -2,13 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: UserProfile | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (profile: Omit<UserProfile, 'uid' | 'createdAt'> & { password: string }) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (profile: UserProfile) => void;
+  logout: () => Promise<void>;
+  updateProfile: (profile: UserProfile) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -22,92 +23,112 @@ export const useAuth = () => {
   return context;
 };
 
+// Map a Supabase profiles row (snake_case) to our UserProfile type (camelCase).
+function rowToProfile(row: Record<string, unknown>): UserProfile {
+  return {
+    uid: row.id as string,
+    name: row.name as string,
+    email: row.email as string,
+    phone: row.phone as string,
+    role: row.role as UserProfile['role'],
+    vehicleDescription: (row.vehicle_description as string) ?? undefined,
+    petsAllowed: (row.pets_allowed as UserProfile['petsAllowed']) ?? undefined,
+    childSeatsAvailable: (row.child_seats_available as number) ?? undefined,
+    wheelchairAccessible: (row.wheelchair_accessible as boolean) ?? undefined,
+    cargoCapacity: (row.cargo_capacity as string) ?? undefined,
+    emergencyContact: (row.emergency_contact as UserProfile['emergencyContact']) ?? undefined,
+    hasPet: (row.has_pet as boolean) ?? undefined,
+    needsChildSeat: (row.needs_child_seat as boolean) ?? undefined,
+    needsWheelchairAccess: (row.needs_wheelchair_access as boolean) ?? undefined,
+    cargoNeeds: (row.cargo_needs as string) ?? undefined,
+    createdAt: new Date(row.created_at as string),
+  };
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load user from localStorage on mount
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        parsed.createdAt = new Date(parsed.createdAt);
-        setUser(parsed);
-      } catch (e) {
-        console.error('Failed to parse stored user:', e);
+    // onAuthStateChange fires immediately with INITIAL_SESSION (existing session or null),
+    // then again for every subsequent sign-in / sign-out event.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setUser(data ? rowToProfile(data) : null);
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Demo mode: check localStorage for registered users.
-    // WARNING: In production, replace this with a secure server-side auth
-    // solution (e.g. Firebase Auth). Never store credentials in localStorage.
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const foundUser = users.find(
-      (u: any) => u.email === email && u.password === password
-    );
-
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      userWithoutPassword.createdAt = new Date(userWithoutPassword.createdAt);
-      setUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-      return true;
-    }
-    return false;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
   };
 
   const register = async (
     profileData: Omit<UserProfile, 'uid' | 'createdAt'> & { password: string }
   ): Promise<boolean> => {
-    // Demo mode: store in localStorage.
-    // WARNING: In production, replace with a secure server-side auth solution.
-    // Passwords must never be stored in plain text in production.
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    // Check if email already exists
-    if (users.some((u: any) => u.email === profileData.email)) {
-      return false;
-    }
+    const { password, ...profile } = profileData;
 
-    const newUser = {
-      ...profileData,
-      uid: `user_${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
+    const { data, error } = await supabase.auth.signUp({ email: profile.email, password });
+    if (error || !data.user) return false;
 
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      role: profile.role,
+      vehicle_description: profile.vehicleDescription ?? null,
+      pets_allowed: profile.petsAllowed ?? null,
+      child_seats_available: profile.childSeatsAvailable ?? null,
+      wheelchair_accessible: profile.wheelchairAccessible ?? null,
+      cargo_capacity: profile.cargoCapacity ?? null,
+      emergency_contact: profile.emergencyContact ?? null,
+      has_pet: profile.hasPet ?? null,
+      needs_child_seat: profile.needsChildSeat ?? null,
+      needs_wheelchair_access: profile.needsWheelchairAccess ?? null,
+      cargo_needs: profile.cargoNeeds ?? null,
+    });
 
-    // Auto-login
-    const { password: _, ...userWithoutPassword } = newUser;
-    const userProfile: UserProfile = {
-      ...userWithoutPassword,
-      createdAt: new Date(userWithoutPassword.createdAt),
-    };
-    setUser(userProfile);
-    localStorage.setItem('currentUser', JSON.stringify(userProfile));
-    return true;
+    return !profileError;
   };
 
-  const logout = () => {
+  const logout = async (): Promise<void> => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('currentUser');
   };
 
-  const updateProfile = (profile: UserProfile) => {
-    setUser(profile);
-    localStorage.setItem('currentUser', JSON.stringify(profile));
-
-    // Update in users array
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const updatedUsers = users.map((u: any) =>
-      u.uid === profile.uid ? { ...u, ...profile } : u
-    );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  const updateProfile = async (profile: UserProfile): Promise<void> => {
+    const { error } = await supabase.from('profiles').upsert({
+      id: profile.uid,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      role: profile.role,
+      vehicle_description: profile.vehicleDescription ?? null,
+      pets_allowed: profile.petsAllowed ?? null,
+      child_seats_available: profile.childSeatsAvailable ?? null,
+      wheelchair_accessible: profile.wheelchairAccessible ?? null,
+      cargo_capacity: profile.cargoCapacity ?? null,
+      emergency_contact: profile.emergencyContact ?? null,
+      has_pet: profile.hasPet ?? null,
+      needs_child_seat: profile.needsChildSeat ?? null,
+      needs_wheelchair_access: profile.needsWheelchairAccess ?? null,
+      cargo_needs: profile.cargoNeeds ?? null,
+    });
+    if (!error) setUser(profile);
   };
 
   return (

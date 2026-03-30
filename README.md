@@ -38,8 +38,8 @@ A free, volunteer-driven community rideshare application for Mayne Island, BC. T
 - **Styling**: Tailwind CSS
 - **Maps**: Leaflet.js (React Leaflet)
 - **Icons**: Lucide React
-- **Authentication**: Demo mode with localStorage (Firebase Auth ready)
-- **Database**: Demo mode with localStorage (Firebase Firestore ready)
+- **Authentication**: Supabase Auth (email + password)
+- **Database**: Supabase PostgreSQL with Realtime subscriptions
 
 ## 🗂️ Architecture
 
@@ -52,7 +52,7 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for full Mermaid flowcharts coverin
 - Driver trip & message board flow
 - Entity-relationship diagram for all data types
 - Role-based access matrix
-- Production upgrade path (Firebase)
+- Production upgrade path (Supabase + Vercel)
 
 ## 🚀 Getting Started
 
@@ -77,29 +77,38 @@ npm install
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Copy `.env.example` to `.env.local` and add your [Supabase](https://supabase.com) credentials:
+   ```bash
+   cp .env.example .env.local
+   ```
+5. Run the SQL schema in the **Supabase SQL Editor**:
+   ```bash
+   # Paste the contents of supabase/schema.sql
+   ```
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-The app runs in **demo mode** by default, using localStorage for data persistence. No additional setup required!
+### Deploy to Vercel
 
-### Production Build
+1. Push the repo to GitHub
+2. Import the project in the [Vercel Dashboard](https://vercel.com)
+3. Add the Supabase env vars (or use the [Supabase Vercel Integration](https://vercel.com/integrations/supabase))
+4. Deploy! 🚀
+
+### Production Build (local)
 
 ```bash
 npm run build
 npm start
 ```
 
-## 🔥 Firebase Setup (Optional)
+## 🔑 Supabase Setup
 
-The app works perfectly in demo mode, but you can enable Firebase for real-time sync across devices:
+This app uses [Supabase](https://supabase.com) for authentication, data storage, and real-time updates:
 
-1. Create a Firebase project at [https://console.firebase.google.com](https://console.firebase.google.com)
-2. Enable Authentication and Firestore Database
-3. Copy `.env.example` to `.env.local`:
-   ```bash
-   cp .env.example .env.local
-   ```
-4. Add your Firebase config values to `.env.local`
-5. Restart the development server
+1. Create a free Supabase project at [supabase.com](https://supabase.com)
+2. Run [`supabase/schema.sql`](./supabase/schema.sql) in the **SQL Editor** — creates the `profiles`, `ride_requests`, and `driver_trips` tables with RLS policies and Realtime enabled
+3. In **Project Settings → Authentication → Email**, you can disable "Confirm email" for easier local testing
+4. Copy your **Project URL** and **anon key** from **Project Settings → API** into `.env.local`
 
 ## 📱 Pages & Routes
 
@@ -117,7 +126,7 @@ The app works perfectly in demo mode, but you can enable Firebase for real-time 
 
 This app is designed with Mayne Island's community values in mind:
 
-- **100% Free & Volunteer**: just neighbors helping neighbors Tips accepted
+- **100% Free & Volunteer**: just neighbors helping neighbors. Tips accepted.
 - **Accessible**: Support for various needs (pets, mobility, children, cargo)
 - **Transparent**: All ride requests visible to all drivers
 - **Safe**: Emergency contacts, safety guidelines, and community accountability

@@ -182,12 +182,13 @@ This repository now contains a **fully functional, production-ready rideshare ap
 - localStorage for data persistence
 - Perfect for testing and development
 
-### Production Mode (Firebase Optional)
+### Production Mode (Supabase)
 - Environment variables configured (`.env.example`)
-- Firebase Authentication ready
-- Firestore Database ready
-- Real-time sync capability
+- Supabase Authentication (email + password)
+- PostgreSQL database via Supabase
+- Realtime sync via Supabase Realtime subscriptions
 - Multi-device support
+- Deploy to Vercel with the Supabase Vercel Integration
 
 ---
 
@@ -220,8 +221,8 @@ This repository now contains a **fully functional, production-ready rideshare ap
 | Icons | Lucide React |
 | State | React Context API |
 | Storage (Demo) | localStorage |
-| Storage (Prod) | Firebase Firestore |
-| Auth (Prod) | Firebase Auth |
+| Storage (Prod) | Supabase PostgreSQL |
+| Auth (Prod) | Supabase Auth |
 | Build | Webpack (Next.js) |
 | Package Manager | npm |
 
@@ -232,7 +233,7 @@ This repository now contains a **fully functional, production-ready rideshare ap
 1. **README.md** - Comprehensive overview, features, setup, roadmap
 2. **QUICKSTART.md** - Step-by-step getting started guide
 3. **IMPLEMENTATION_SUMMARY.md** - This document
-4. **.env.example** - Firebase configuration template
+4. **.env.example** - Supabase configuration template
 
 ---
 
@@ -244,8 +245,8 @@ This repository now contains a **fully functional, production-ready rideshare ap
 4. **Inclusive**: Supports diverse transportation needs
 5. **Safe**: Built-in safety features and emergency access
 6. **Open**: All ride requests visible to all drivers (transparency)
-7. **Flexible**: Works offline (demo) or online (Firebase)
-8. **Scalable**: Easy to add features, Firebase-ready for growth
+7. **Flexible**: Supabase-powered with real-time sync across all devices
+8. **Scalable**: Easy to add features, Vercel + Supabase scales automatically
 
 ---
 
@@ -255,8 +256,8 @@ The application is **100% complete and functional**. You can:
 
 1. Run it locally: `npm install && npm run dev`
 2. Build for production: `npm run build && npm start`
-3. Deploy to Vercel/Netlify/any Node.js host
-4. Enable Firebase for multi-user real-time sync
+3. Deploy to Vercel: connect your GitHub repo at [vercel.com](https://vercel.com) and add Supabase env vars
+4. Set up Supabase DB: run `supabase/schema.sql` in the Supabase SQL editor
 5. Customize for other communities
 
 ---

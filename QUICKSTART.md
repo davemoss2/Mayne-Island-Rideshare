@@ -52,32 +52,45 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 🔄 Demo Mode vs Firebase
+## 🔄 Setup: Supabase + Vercel
 
-### Demo Mode (Default)
-- ✅ Works immediately, no setup
-- ✅ Data stored in browser localStorage
-- ✅ Real-time simulation with 5-second polling
-- ⚠️ Data only visible in your browser
-- ⚠️ Cleared when you clear browser data
+### Supabase (backend)
 
-### Firebase Mode (Optional)
-To enable real-time sync across devices:
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Open **SQL Editor** and run the contents of [`supabase/schema.sql`](./supabase/schema.sql)
+   — this creates the `profiles`, `ride_requests`, and `driver_trips` tables with RLS policies and Realtime enabled.
+3. In **Project Settings → Authentication → Email**, disable "Confirm email" for development (optional but convenient).
+4. In **Project Settings → API**, copy your **Project URL** and **anon/public key**.
 
-1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable Authentication (Email/Password)
-3. Enable Firestore Database
-4. Copy `.env.example` to `.env.local`
-5. Add your Firebase config to `.env.local`:
-   ```env
-   NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-   NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-   ```
-6. Restart dev server: `npm run dev`
+### Local development
+
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+Then start the dev server:
+
+```bash
+npm run dev
+```
+
+### Vercel deployment
+
+The easiest way is to use the official **[Supabase Vercel Integration](https://vercel.com/integrations/supabase)** — it automatically adds `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to your Vercel project.
+
+Alternatively, add the two environment variables manually in **Vercel Dashboard → Project → Settings → Environment Variables**.
+
+Then deploy:
+
+```bash
+# Via Vercel CLI
+npx vercel --prod
+
+# Or connect your GitHub repo in the Vercel dashboard for automatic deploys
+```
 
 ---
 
@@ -87,9 +100,9 @@ To test the full experience:
 
 1. **Browser 1 (Normal)**: Register as a Rider, submit ride request
 2. **Browser 2 (Incognito)**: Register as a Driver, see the request, confirm it
-3. **Browser 1**: Refresh to see driver confirmed your ride!
+3. **Browser 1**: See the driver's details appear in real-time!
 
-Or use multiple browsers/devices on the same network with production build (`npm run build && npm start`).
+Both browsers connect to the same Supabase project — no refresh needed, changes sync instantly via Supabase Realtime.
 
 ---
 
@@ -106,12 +119,12 @@ Access at [http://localhost:3000](http://localhost:3000)
 
 ## 🛠️ Tech Stack
 
-- **Next.js 15** - React framework with App Router
+- **Next.js** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
 - **Leaflet** - Open-source maps
 - **Lucide React** - Icons
-- **Firebase** (optional) - Auth + real-time database
+- **Supabase** - Auth, PostgreSQL database, and Realtime subscriptions
 
 ---
 
@@ -175,8 +188,8 @@ src/
 ✅ Emergency contacts & safety info  
 ✅ Profile management  
 ✅ Mobile-first responsive design  
-✅ Works offline (demo mode)  
-✅ Firebase-ready for production  
+✅ Supabase Auth + PostgreSQL + Realtime  
+✅ Deploy to Vercel in minutes  
 
 ---
 

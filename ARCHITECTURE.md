@@ -8,7 +8,7 @@ This document describes the structure and data flows of the application using fl
 
 ```mermaid
 graph TB
-    subgraph Browser["Browser (Client-Only)"]
+    subgraph Browser["Browser (Next.js Client Components)"]
         subgraph Providers["React Context Providers (layout.tsx)"]
             AC["AuthContext\n─────────────\nuser: UserProfile\nisLoading: boolean\nlogin / register\nlogout / updateProfile"]
             DC["DataContext\n─────────────\nrideRequests[ ]\ndriverTrips[ ]\ncreate / confirm\ncancel / delete"]
@@ -33,7 +33,13 @@ graph TB
             MC["Map\n(Leaflet – lazy)"]
         end
 
-        LS[("localStorage\n──────────\ncurrentUser\nusers[ ]\nrideRequests[ ]\ndriverTrips[ ]")]
+        LIB["src/lib/supabase.ts\ncreateClient()"]
+    end
+
+    subgraph Supabase["Supabase (Backend)"]
+        SBAUTH["Supabase Auth"]
+        SBDB["PostgreSQL\nprofiles\nride_requests\ndriver_trips"]
+        SBRT["Realtime\npostgres_changes"]
     end
 
     subgraph External["External Services"]
@@ -43,11 +49,13 @@ graph TB
         FB["Facebook Share"]
         TW["Twitter / X Share"]
         WA["WhatsApp Share"]
-        FB_SDK["Firebase SDK\n(initialized,\nready for prod)"]
     end
 
-    AC <-->|"read / write"| LS
-    DC <-->|"read / write\n+ 5 s poll"| LS
+    AC <-->|"signIn / signUp / signOut"| SBAUTH
+    DC <-->|"select / insert / update / delete"| SBDB
+    DC <-->|"Realtime subscriptions"| SBRT
+    AC --> LIB
+    DC --> LIB
     Pages -->|"useAuth()"| AC
     Pages -->|"useData()"| DC
     Pages --> H
@@ -96,7 +104,7 @@ graph TD
     class RIDER,DRIVER,PROFILE lock
 ```
 
-> 🔒 = requires authentication. The page checks `isLoading` before redirecting so localStorage hydration completes first.
+> 🔒 = requires authentication. The page checks `isLoading` (set by Supabase's `onAuthStateChange`) before redirecting.
 
 ---
 
@@ -104,8 +112,8 @@ graph TD
 
 ```mermaid
 flowchart TD
-    A([User visits any page]) --> B{Authenticated?\ncheck localStorage}
-    B -->|"Yes – user in localStorage"| C{Role?}
+    A([User visits any page]) --> B{Authenticated?\nSupabase session}
+    B -->|"Yes – active session"| C{Role?}
     B -->|"No"| D[Show public page\nor redirect to /auth/login]
 
     C -->|rider| E["/rider dashboard"]
@@ -116,10 +124,10 @@ flowchart TD
     H -->|Register| I["/auth/register\nfill name, email, phone\npassword, role\nvehicle / rider prefs"]
     H -->|Login| J["/auth/login\nemail + password"]
 
-    I --> K["register()\n→ store user in localStorage\n→ auto-login"]
-    J --> L["login()\n→ validate credentials\n→ load user from localStorage"]
+    I --> K["register()\n→ supabase.auth.signUp()\n→ insert into profiles table"]
+    J --> L["login()\n→ supabase.auth.signInWithPassword()\n→ fetch profile row"]
 
-    K --> M["Set currentUser\nin localStorage + React state"]
+    K --> M["onAuthStateChange fires\n→ load profile → set user state"]
     L --> M
     M --> C
 
@@ -137,18 +145,21 @@ flowchart TD
 sequenceDiagram
     participant R  as Rider (/rider)
     participant DC as DataContext
-    participant LS as localStorage
+    participant SB as Supabase DB + Realtime
     participant D  as Driver (/driver)
     participant E  as Emergency page
 
     R->>DC: createRideRequest(pickup, destination, needs)
-    DC->>LS: save rideRequests[]   (status = "pending")
-    note over DC,LS: DataContext polls every 5 s
+    DC->>SB: INSERT into ride_requests (status = "pending")
+    SB-->>DC: postgres_changes event fires
+    DC->>SB: SELECT ride_requests (reload)
+    SB-->>DC: updated rideRequests[]
 
     D->>DC: useData() – sees pending requests
     DC-->>D: rideRequests[] (status = "pending")
     D->>DC: confirmRideRequest(requestId, driverId, name, phone, vehicle)
-    DC->>LS: update status → "confirmed" + driver info
+    DC->>SB: UPDATE ride_requests SET status = "confirmed" + driver info
+    SB-->>DC: postgres_changes event fires → reload
     DC-->>R: RideRequestCard re-renders\nshows driver name / phone / vehicle
 
     R->>E: visits /emergency
@@ -320,35 +331,45 @@ graph LR
 
 ---
 
-## 8. Production Upgrade Path
+## 8. Deployment: Supabase + Vercel
 
-The app runs in **demo mode** today (localStorage only). To deploy for real community use:
+The app uses **Supabase** for auth, PostgreSQL storage, and real-time sync, and **Vercel** for hosting.
 
 ```mermaid
 flowchart LR
-    subgraph Now["Demo Mode (current)"]
-        LS["localStorage\n(single browser)"]
-        MOCK["AuthContext\nlogin / register\n→ localStorage"]
+    subgraph Supabase["Supabase (backend)"]
+        SA["Supabase Auth\n(email + password)"]
+        PG["PostgreSQL\nprofiles\nride_requests\ndriver_trips"]
+        RT["Supabase Realtime\npostgres_changes\nsubscriptions"]
+        RLS["Row-Level Security\npolicies"]
     end
 
-    subgraph Prod["Production Mode"]
-        FB_AUTH["Firebase Auth\n(email + OAuth)"]
-        FS["Firestore\n(real-time listeners)"]
-        FCM["Firebase Cloud\nMessaging\n(push notifications)"]
-        ENV[".env.local\nFIREBASE_API_KEY etc."]
+    subgraph App["Next.js App"]
+        AC["AuthContext\nsupabase.auth.*"]
+        DC["DataContext\nsupabase.from().*\n+ Realtime channels"]
+        LIB["src/lib/supabase.ts\ncreateClient()"]
     end
 
-    MOCK  -->|"replace with"| FB_AUTH
-    LS    -->|"replace with"| FS
-    LS    -->|"add"| FCM
-    ENV   -->|"configure"| FB_AUTH
-    ENV   -->|"configure"| FS
+    subgraph Hosting["Vercel"]
+        VD["Vercel Dashboard\nEnv Vars"]
+        INT["Supabase Vercel\nIntegration\n(auto-sets env vars)"]
+    end
 
-    note1["src/lib/firebase.ts\nalready reads env vars\nand initialises the SDK"]
-    ENV --> note1
+    subgraph ENV[".env.local"]
+        URL["NEXT_PUBLIC_SUPABASE_URL"]
+        KEY["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+    end
+
+    AC  -->|"signIn / signUp / signOut"| SA
+    DC  -->|"select / insert / update / delete"| PG
+    DC  -->|"channel subscriptions"| RT
+    PG  -->|"enforces"| RLS
+    LIB -->|"reads"| ENV
+    INT -->|"populates"| VD
+    VD  -->|"injects at build"| ENV
 ```
 
 > **Required `.env.local` keys** (see `.env.example`):
-> `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`,
-> `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`,
-> `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`
+> `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+>
+> Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor to create all tables, RLS policies, and Realtime publications.
