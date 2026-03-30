@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Car, Save, AlertCircle } from 'lucide-react';
+import { UserProfile } from '@/types';
 
 export default function ProfilePage() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, isLoading } = useAuth();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -32,8 +33,9 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
       return;
     }
 
@@ -54,47 +56,38 @@ export default function ProfilePage() {
       needsWheelchairAccess: user.needsWheelchairAccess || false,
       cargoNeeds: user.cargoNeeds || '',
     });
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    const updatedProfile: any = {
+    const updatedProfile: UserProfile = {
       ...user,
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       role: formData.role,
+      vehicleDescription: (formData.role === 'driver' || formData.role === 'both') ? formData.vehicleDescription : user.vehicleDescription,
+      petsAllowed: (formData.role === 'driver' || formData.role === 'both') ? formData.petsAllowed : user.petsAllowed,
+      childSeatsAvailable: (formData.role === 'driver' || formData.role === 'both') ? formData.childSeatsAvailable : user.childSeatsAvailable,
+      wheelchairAccessible: (formData.role === 'driver' || formData.role === 'both') ? formData.wheelchairAccessible : user.wheelchairAccessible,
+      cargoCapacity: (formData.role === 'driver' || formData.role === 'both') ? formData.cargoCapacity : user.cargoCapacity,
+      emergencyContact: (formData.role === 'driver' || formData.role === 'both') && formData.emergencyContactName && formData.emergencyContactPhone
+        ? { name: formData.emergencyContactName, phone: formData.emergencyContactPhone }
+        : user.emergencyContact,
+      hasPet: (formData.role === 'rider' || formData.role === 'both') ? formData.hasPet : user.hasPet,
+      needsChildSeat: (formData.role === 'rider' || formData.role === 'both') ? formData.needsChildSeat : user.needsChildSeat,
+      needsWheelchairAccess: (formData.role === 'rider' || formData.role === 'both') ? formData.needsWheelchairAccess : user.needsWheelchairAccess,
+      cargoNeeds: (formData.role === 'rider' || formData.role === 'both') ? formData.cargoNeeds : user.cargoNeeds,
     };
-
-    if (formData.role === 'driver' || formData.role === 'both') {
-      updatedProfile.vehicleDescription = formData.vehicleDescription;
-      updatedProfile.petsAllowed = formData.petsAllowed;
-      updatedProfile.childSeatsAvailable = formData.childSeatsAvailable;
-      updatedProfile.wheelchairAccessible = formData.wheelchairAccessible;
-      updatedProfile.cargoCapacity = formData.cargoCapacity;
-      if (formData.emergencyContactName && formData.emergencyContactPhone) {
-        updatedProfile.emergencyContact = {
-          name: formData.emergencyContactName,
-          phone: formData.emergencyContactPhone,
-        };
-      }
-    }
-
-    if (formData.role === 'rider' || formData.role === 'both') {
-      updatedProfile.hasPet = formData.hasPet;
-      updatedProfile.needsChildSeat = formData.needsChildSeat;
-      updatedProfile.needsWheelchairAccess = formData.needsWheelchairAccess;
-      updatedProfile.cargoNeeds = formData.cargoNeeds;
-    }
 
     updateProfile(updatedProfile);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
 
   const showDriverFields = formData.role === 'driver' || formData.role === 'both';
   const showRiderFields = formData.role === 'rider' || formData.role === 'both';

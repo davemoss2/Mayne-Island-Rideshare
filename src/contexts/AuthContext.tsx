@@ -42,7 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Demo mode: check localStorage for registered users
+    // Demo mode: check localStorage for registered users.
+    // WARNING: In production, replace this with a secure server-side auth
+    // solution (e.g. Firebase Auth). Never store credentials in localStorage.
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const foundUser = users.find(
       (u: any) => u.email === email && u.password === password
@@ -61,7 +63,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (
     profileData: Omit<UserProfile, 'uid' | 'createdAt'> & { password: string }
   ): Promise<boolean> => {
-    // Demo mode: store in localStorage
+    // Demo mode: store in localStorage.
+    // WARNING: In production, replace with a secure server-side auth solution.
+    // Passwords must never be stored in plain text in production.
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     // Check if email already exists

@@ -15,11 +15,11 @@ export default function HomePage() {
   useEffect(() => {
     if (user) {
       if (user.role === 'rider') {
-        router.push('/rider');
+        router.replace('/rider');
       } else if (user.role === 'driver') {
-        router.push('/driver');
+        router.replace('/driver');
       } else if (user.role === 'both') {
-        router.push('/rider');
+        router.replace('/rider');
       }
     }
   }, [user, router]);

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserPlus, AlertCircle, Info } from 'lucide-react';
+import { UserProfile } from '@/types';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -52,34 +53,26 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const profileData: any = {
+      type RegisterData = Omit<UserProfile, 'uid' | 'createdAt'> & { password: string };
+      const profileData: RegisterData = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
         role: formData.role,
+        vehicleDescription: (formData.role === 'driver' || formData.role === 'both') ? formData.vehicleDescription : undefined,
+        petsAllowed: (formData.role === 'driver' || formData.role === 'both') ? formData.petsAllowed : undefined,
+        childSeatsAvailable: (formData.role === 'driver' || formData.role === 'both') ? formData.childSeatsAvailable : undefined,
+        wheelchairAccessible: (formData.role === 'driver' || formData.role === 'both') ? formData.wheelchairAccessible : undefined,
+        cargoCapacity: (formData.role === 'driver' || formData.role === 'both') ? formData.cargoCapacity : undefined,
+        emergencyContact: (formData.role === 'driver' || formData.role === 'both') && formData.emergencyContactName && formData.emergencyContactPhone
+          ? { name: formData.emergencyContactName, phone: formData.emergencyContactPhone }
+          : undefined,
+        hasPet: (formData.role === 'rider' || formData.role === 'both') ? formData.hasPet : undefined,
+        needsChildSeat: (formData.role === 'rider' || formData.role === 'both') ? formData.needsChildSeat : undefined,
+        needsWheelchairAccess: (formData.role === 'rider' || formData.role === 'both') ? formData.needsWheelchairAccess : undefined,
+        cargoNeeds: (formData.role === 'rider' || formData.role === 'both') ? formData.cargoNeeds : undefined,
       };
-
-      if (formData.role === 'driver' || formData.role === 'both') {
-        profileData.vehicleDescription = formData.vehicleDescription;
-        profileData.petsAllowed = formData.petsAllowed;
-        profileData.childSeatsAvailable = formData.childSeatsAvailable;
-        profileData.wheelchairAccessible = formData.wheelchairAccessible;
-        profileData.cargoCapacity = formData.cargoCapacity;
-        if (formData.emergencyContactName && formData.emergencyContactPhone) {
-          profileData.emergencyContact = {
-            name: formData.emergencyContactName,
-            phone: formData.emergencyContactPhone,
-          };
-        }
-      }
-
-      if (formData.role === 'rider' || formData.role === 'both') {
-        profileData.hasPet = formData.hasPet;
-        profileData.needsChildSeat = formData.needsChildSeat;
-        profileData.needsWheelchairAccess = formData.needsWheelchairAccess;
-        profileData.cargoNeeds = formData.cargoNeeds;
-      }
 
       const success = await register(profileData);
       if (success) {

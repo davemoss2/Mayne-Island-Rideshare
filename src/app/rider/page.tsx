@@ -9,7 +9,7 @@ import TripCard from '@/components/TripCard';
 import { MapPin, Send, AlertCircle } from 'lucide-react';
 
 export default function RiderPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { rideRequests, driverTrips, createRideRequest } = useData();
   const router = useRouter();
 
@@ -24,12 +24,13 @@ export default function RiderPage() {
   });
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
       return;
     }
     if (user.role === 'driver') {
-      router.push('/driver');
+      router.replace('/driver');
       return;
     }
 
@@ -41,7 +42,7 @@ export default function RiderPage() {
       needsWheelchairAccess: user.needsWheelchairAccess || false,
       cargoDescription: user.cargoNeeds || '',
     }));
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +74,7 @@ export default function RiderPage() {
     });
   };
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
 
   const myRequests = rideRequests.filter((r) => r.riderId === user.uid);
   const activeTrips = driverTrips.filter((t) => t.status === 'active');

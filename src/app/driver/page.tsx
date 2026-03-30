@@ -9,7 +9,7 @@ import TripCard from '@/components/TripCard';
 import { Car, AlertCircle, Plus } from 'lucide-react';
 
 export default function DriverPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { rideRequests, driverTrips, confirmRideRequest, createDriverTrip, deleteDriverTrip } = useData();
   const router = useRouter();
 
@@ -23,15 +23,16 @@ export default function DriverPage() {
   });
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
       return;
     }
     if (user.role === 'rider') {
-      router.push('/rider');
+      router.replace('/rider');
       return;
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   const handleConfirmRide = (requestId: string) => {
     if (!user) return;
@@ -73,7 +74,7 @@ export default function DriverPage() {
     setShowTripForm(false);
   };
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
 
   const pendingRequests = rideRequests.filter((r) => r.status === 'pending');
   const myTrips = driverTrips.filter((t) => t.driverId === user.uid);
