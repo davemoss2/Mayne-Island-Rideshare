@@ -207,3 +207,7 @@ For questions or issues:
 ---
 
 **Remember**: This is a volunteer community service. Be kind, be safe, and help make Mayne Island more connected! 🏝️
+# Mayne-Island-Rideshare
+This repo holds the software for a ridesharing app focused on Mayne Island BC.  Connecting drivers with passengers (tips encouraged) and vice versa.  Cargo, ferry runs and deliveries too
+
+It should be like uber but free
