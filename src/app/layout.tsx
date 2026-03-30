@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { DataProvider } from '@/contexts/DataContext';
 import Header from '@/components/Header';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
   title: 'Mayne Island Rideshare - Community Volunteer Transportation',
@@ -23,6 +24,7 @@ export default function RootLayout({
             <main className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
               {children}
             </main>
+            <Analytics />
           </DataProvider>
         </AuthProvider>
       </body>
