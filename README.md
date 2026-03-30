@@ -117,7 +117,7 @@ The app works perfectly in demo mode, but you can enable Firebase for real-time 
 
 This app is designed with Mayne Island's community values in mind:
 
-- **100% Free & Volunteer**: No payments, no fees - just neighbors helping neighbors
+- **100% Free & Volunteer**: just neighbors helping neighbors Tips accepted
 - **Accessible**: Support for various needs (pets, mobility, children, cargo)
 - **Transparent**: All ride requests visible to all drivers
 - **Safe**: Emergency contacts, safety guidelines, and community accountability
@@ -129,7 +129,7 @@ This app is designed with Mayne Island's community values in mind:
 - **Communication**: Clearly communicate needs and availability
 - **Punctuality**: Be on time and notify if plans change
 - **Safety**: Drivers must have valid license and insurance
-- **Free Service**: This is volunteer-based - no payment accepted
+- **Free Service**: This is volunteer-based - no payment required 
 - **Trust**: Build community through reliable, friendly service
 
 ## 📝 Development
@@ -175,6 +175,9 @@ Future enhancements could include:
 - [ ] Integration with ferry schedules
 - [ ] SMS notifications option
 - [ ] Admin dashboard for community moderators
+- [ ] Connecting with MIALS drive program
+- [ ] CSA delivery
+- [ ] How to integrate w/Mayne Island Express Courier
 
 ## 📄 License
 
