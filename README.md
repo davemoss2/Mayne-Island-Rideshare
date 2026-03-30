@@ -41,6 +41,19 @@ A free, volunteer-driven community rideshare application for Mayne Island, BC. T
 - **Authentication**: Demo mode with localStorage (Firebase Auth ready)
 - **Database**: Demo mode with localStorage (Firebase Firestore ready)
 
+## 🗂️ Architecture
+
+See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for full Mermaid flowcharts covering:
+
+- High-level system overview (pages, contexts, localStorage, external services)
+- Page & component tree
+- Authentication flow
+- Ride request lifecycle (rider → driver → confirmation)
+- Driver trip & message board flow
+- Entity-relationship diagram for all data types
+- Role-based access matrix
+- Production upgrade path (Firebase)
+
 ## 🚀 Getting Started
 
 ### Prerequisites
